@@ -1,0 +1,417 @@
+\chapter{Modeling The System}
+
+\section{Setup}
+
+\subsection{Step 1: Define Generalized Coordinates}
+
+What minimal set of variables fully describe the system?
+
+\begin{itemize}
+	\item $\boldsymbol{\theta}$: Pendulum tilt angle
+	\item $\boldsymbol{\phi}$: Wheel rotation angle
+	\item \textbf{r}: Position of the axle in the \textit{x} direction
+\end{itemize}
+
+\subsection{Step: Define the Control Inputs}
+
+What are the actuators in the system? What do we have control over?
+
+\begin{itemize}
+	\item $\boldsymbol{\tau}$: Torque applied to the wheels
+\end{itemize}
+
+\subsection{Assumptions}
+
+How do these variables relate and what assumptions will we make?
+\begin{itemize}
+	\item Assume no slippage between the wheels and the ground, otherwise there wouldn't be motion in the \textit{x-y} plane
+	\begin{itemize}
+		\item No slippage $\implies \delta r = $ distance along wheel circumference
+		
+		For the circumference $c$,
+		\begin{equation}
+			c = \pi d
+		\end{equation}
+			For a small change in $r$ = $\delta r $,
+		\begin{align}
+			\delta r = \textrm{arc along circumference drawn by } \phi
+		\end{align}
+			So we want know the fraction of the circumference rolled based on the angle rotated. Since $\delta \phi$ is the small angle rotated and and $2 \pi$ is a full rotation, we can divide the two to get the ratio and multiply that by the circumference.
+		\begin{align}
+			\delta r & = \frac{\delta \phi}{2 \pi} * \pi d \\
+					&	= \frac{\delta \phi \; d}{2} \\
+					&	= \delta \phi \; \rho
+		\end{align}
+			So, if we think about this small changes over time, it because velocities, so the previous equation becomes
+		\begin{equation}
+			\dot{r} = \dot{\phi} \; \rho
+		\end{equation}
+		So we just reduced our set of generalized coordinates by 1.
+	\end{itemize}
+\end{itemize}
+
+\subsection{Choose b/t Newtonian and Lagrangian Mechanics}
+\textbf{Euler Lagrange's Equation} ($\frac{\partial L}{\partial q} - \frac{d}{dt} \frac{\partial L}{\partial \dot q}$)
+\begin{itemize}
+	\item Best for systems with constraints (like rolling without slipping)
+	\item Automatically eliminates contstraint forces (like friction)
+	\item Preferred for control and robotics problems
+\end{itemize}
+
+\section{Lagrange Equations}
+
+\subsection{Lagrange Equation}
+
+\begin{equation}
+	L = T - U
+\end{equation}
+where L is the total energy of the system, $T$ is the \textit{kinetic energy} of the system, and $U$ is the \textit{potential energy} of the system.
+
+\subsection{Kinetic Energy}
+
+Let's write out the components of the system that contribute to the kinetic energy, T with respect to our generalized coordinates.
+
+Those components are:
+
+\begin{itemize}
+	\item Wheels move horizontally, and therefore contribute to torque
+	\item Pendulum mass moves horizontally and vertically
+	\item Pendulum rotates
+\end{itemize}
+	
+\subsubsection{Wheels Moving Horitzontally}
+
+With $T$ as the kinetic energy, $M$ being the mass of the entire system, and $\dot r^{2}$ is the horizontal velocity of the wheels,
+\begin{equation}
+	T = \frac{1}{2} M \; \dot r^{2}
+\end{equation}
+
+\subsubsection{Pendulum Mass Moving Horizontally \& Vertically}
+
+We will assume a center of mass (COM), $m$, of the pendulum.
+Thus, the COM position is:
+\begin{equation}
+	x_{COM} = r + l sin(\theta)
+\end{equation}
+\begin{equation}
+	z_{COM} = l cos(\theta)
+\end{equation}
+Technically, we could add in $\rho$ to account for the height of the axle off the ground, but it's a constant and with Lagrange, only differences matter.
+
+For the kinetic energy of the pendulum center of mass, we need velocities, so we can differentiate the position equations to get:
+\begin{align}
+	\dot{x}_{COM} & = wheel\_velocity\_in\_x + pendulum\_mass\_velocity\_in\_x \\
+              & = \frac{d}{dt} r + \frac{d}{dt} l sin(\theta) \\
+              & = \dot{r} + l \dot{\theta} cos(\theta)
+\end{align}
+\begin{align}
+	\dot{z}_{COM} & = wheel\_velocity\_in\_z + pendulum\_mass\_velocity\_in\_z \\
+			  & = 0 + \frac{d}{dt} l cos(\theta) \\
+			  & = - l \dot{\theta} sin(\theta)
+\end{align}
+
+So the total velocity, which is in the direction tangential to the circle it draws,  is:
+\begin{equation}
+	\nu^{2}_{COM} = \dot{x}^2_{COM} + \dot{z}^2_{COM}
+\end{equation}
+
+Substituting the velocity terms above, we get:
+\begin{equation}
+	\nu^{2}_{COM} = (\dot{r} + l \dot{\theta} cos(\theta))^2 + (- l \dot{\theta} sin(\theta))^2
+\end{equation}
+
+Expanding, we get:
+\begin{equation}
+	\nu^{2}_{COM} = \dot{r}^2 + 2 l \dot{r}\dot{\theta} cos(\theta) + l^2 \dot{\theta}^2 cos^2(\theta) + l^2 \dot{\theta}^2 sin^2(\theta)
+\end{equation}
+
+Using the knowledge that $cos^2(\theta) + sin^2(\theta) = 1$:
+\begin{equation}
+	\nu^{2}_{COM} = \dot{r}^2 + 2 l \dot{r}\dot{\theta} cos(\theta) + l^2 \dot{\theta}^2
+\end{equation}
+
+Since kinetic energy is
+\begin{equation}
+	T = \frac{1}{2}m\nu^2_{COM}
+\end{equation}
+
+Substituting in $\nu^{2}_{COM}$:
+\begin{equation}
+	T = \frac{1}{2}m(\dot{r}^2 + 2 l \dot{r}\dot{\theta} cos(\theta) + l^2 \dot{\theta}^2)
+\end{equation}
+
+\subsubsection{Pendulum Rotational Kinetic Energy}
+
+As a distributed mass and not a point mass, the pendulum has a moment of inertia which contributes to the kinetic energy.
+
+The standard rotational kinetic energy is defined as below, with $I_p$ being the moment of inertia about the center of mass (or the resistance to rotational motion):
+
+\begin{equation}
+	T_{rot} = \frac{1}{2}I_p\dot{\theta}^2
+\end{equation}
+
+If we assume a point mass, $I_p = 0$, and the pendulum only has translational kinetic energy. For a distributed mass, we must include $I_p$, and therefore account for the rotational kinetic energy that the pendulum has.
+
+So the total kinetic energy of the penulum as a distributed mass is:
+
+\begin{align}
+	T_{pendulum} &= T_{translational} + T_{rotational} \\
+							 &= \frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2
+\end{align} 
+
+\subsection{Potential Energy}
+Now let's look at the potential energy of the system with respect to our generalized coordinates, $\theta$, r, and $\phi$:	
+
+The wheels do not store potential energy, due to always being on the ground.
+
+The pendulum stores potential energy due to being at a height and having a tendency to fall due to gravity:
+
+So the potential energy, $U$ of the system is:
+\begin{equation}
+	U = mglcos(\theta)
+\end{equation}
+
+One could include the height of the wheels, but Lagrange only cares about energy differences, since derivatives are taken, and therefore both methods lead to the same answer, but excluding $\rho$ simplifies the math.
+
+\subsection{Langrange Equation}
+
+Now that we have defined the equations for the kinetic and potential energies of the system in terms of the generlized coordinates, we can write out the Lagrange equation, which we need for the Euler-Lagrange equation.
+\begin{align}
+	Lagrangian &= Kinetic\_Energy - Potential\_Energy \\
+	L &= T - U \\
+	   &= \frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2 - mglcos(\theta)
+\end{align}
+
+\subsection{Euler-Lagrange}
+The Euler-Lagrange equations consist of second-order ordinary differential equations whose solutions are stationary points of the given action functional (Lagrange equation).
+
+The Euler-Lagrange equation, where $q$ is the vector of generalize position coordinates, and $\dot{q}$ is the vector of generalized velocity coordinates, is:
+\begin{equation}
+	\frac{\partial L}{\partial q_i} - \frac{d}{dt} \frac{\partial L}{\partial \dot q_i} = 0
+\end{equation}
+This equation can be thought of as the change in the Lagrangian with respect to the generalized position coordinates is equal to the time derivative of the change in the Lagrangian with respect to the generalize velocity coordinates.
+
+Let's break this down:
+\textbf{Taking the partial derivative of $L$ with respect to $q$}:
+	\begin{itemize}
+		\item This means, check how the system's energy changes when the position changes.
+		\item Imagine biking up a hill - your potential energy increases as your position above sea level increases.
+		\item This measures how forces act to pull the system toward or away from certain positions. As the bike's position above sea level increases, the energy bringing the bike back down toward sea level increases.
+	\end{itemize}
+	
+\textbf{Taking the partial derivative of $L$ with respect to $\dot{q}$}:
+	\begin{itemize}
+		\item This means, check how the system's energy changes when the velocity changes.
+		\item Imagine pedal a bike faster - your kinetic energy increases as the bikes forward velocity increases.
+		\item This measures how sensitive the system is to changes in velocity.
+	\end{itemize}
+	
+\textbf{Take the time derivate of that}:
+	\begin{itemize}
+		\item This mean, check how that sensitivity (of the system's energy to velocity changes) changes over time.
+		\item Suppose you slow down or speed up while biking. This step tracks how the rate of energy change evolves.
+	\end{itemize}
+
+For our wheeled inverted pendulum, our position variables are:
+\begin{equation}
+	q = [r \;\; \theta]
+\end{equation}
+
+So first solving for $\frac{\partial L}{\partial q_i}$, defines how the system's energy changes when the position changes:
+\begin{align}
+	\frac{\partial L}{\partial q} = \begin{bmatrix}\frac{\partial T}{\partial r} - \frac{\partial U}{\partial r} \\ \\ \frac{\partial T}{\partial \theta} - \frac{\partial U}{\partial \theta}\end{bmatrix}
+\end{align}
+
+Let's solve for $\frac{\partial T}{\partial r}$ first:
+\begin{align}
+	\frac{\partial T}{\partial r} &= \frac{\partial}{\partial r} (\frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2) \\
+	&= 0
+\end{align}
+It is 0 because $r$ is not found in the equation for the kinetic energy (i.e., the kinetic energy does not depend on the horizontal position of the wheels).
+
+Now let's solve for $\frac{\partial T}{\partial \theta}$:
+\begin{align}
+	\frac{\partial T}{\partial \theta} &=  \frac{\partial}{\partial \theta} (\frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2) \\
+	&= -ml\dot{r}\dot{\theta}sin(\theta)
+\end{align}
+
+Now we can solve for $\frac{\partial U}{\partial r}$:
+\begin{align}
+	\frac{\partial U}{\partial r} &= \frac{\partial}{\partial r} (mglcos(\theta)) \\
+	&= 0
+\end{align}
+
+And $\frac{\partial U}{\partial \theta}$:
+\begin{align}
+	\frac{\partial U}{\partial \theta} &= \frac{\partial}{\partial \theta} (mglcos(\theta)) \\
+	&= -mglsin(\theta)
+\end{align}
+
+So we can now fill in the $\frac{\partial L}{\partial q}$:
+\begin{align}
+	\frac{\partial L}{\partial q} &= \begin{bmatrix}0 \; - \; 0 \\ -ml\dot{r}\dot{\theta}sin(\theta) \; + \; mglsin(\theta)\end{bmatrix} \\
+	&= \begin{bmatrix}0 \\ -ml\dot{r}\dot{\theta}sin(\theta) \; + \; mglsin(\theta)\end{bmatrix}
+\end{align}
+
+Now let's look at $\frac{d}{dt} \frac{\partial L}{\partial \dot q_i}$, starting $\frac{\partial L}{\partial \dot q_i}$, which let's us know how the system's energy change when velocity changes:
+\begin{align}
+	\frac{\partial L}{\partial \dot{q}} = \begin{bmatrix}\frac{\partial T}{\partial \dot{r}} - \frac{\partial U}{\partial \dot{r}} \\ \\ \frac{\partial T}{\partial \dot{\theta}} - \frac{\partial U}{\partial \dot{\theta}}\end{bmatrix}
+\end{align}
+
+So the change in kinetic energy with respect to the translational velocity of the wheels is:
+\begin{align}
+	\frac{\partial T}{\partial \dot{r}} &= \frac{\partial}{\partial \dot{r}} (\frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2) \\
+	&= m\dot{r} + ml\dot{\theta}cos(\theta)
+\end{align}
+And the change in kinetic energy of the system with respect to the angular velocity of the pendulum:
+
+\begin{align}
+	\frac{\partial T}{\partial \dot{\theta}} &= \frac{\partial}{\partial \dot{\theta}} (\frac{1}{2}m(\dot{r}^2 + 2l\dot{r}\dot{\theta}cos(\theta) + l^2\dot{\theta}^2) + \frac{1}{2}I_p\dot{\theta}^2) \\
+	&= ml\dot{r}cos(\theta) + ml^2\dot{\theta} + I_p\dot{\theta} \\
+	&= ml\dot{r}cos(\theta) + \dot{\theta}(ml^2 + I_p)
+\end{align}
+
+Now for the potential energies:
+Now we can solve for $\frac{\partial U}{\partial \dot{r}}$:
+\begin{align}
+	\frac{\partial U}{\partial \dot{r}} &= \frac{\partial}{\partial \dot{r}} (mglcos(\theta)) \\
+	&= 0
+\end{align}
+
+And $\frac{\partial U}{\partial \dot{\theta}}$:
+\begin{align}
+	\frac{\partial U}{\partial \dot{\theta}} &= \frac{\partial}{\partial \dot{\theta}} (mglcos(\theta)) \\
+	&= 0
+\end{align}
+
+So,
+\begin{align}
+	\frac{\partial L}{\partial \dot{q}} &= \begin{bmatrix}\frac{\partial L}{\partial \dot{r}} \\ \\ \frac{\partial L}{\partial \dot{\theta}}\end{bmatrix} \\
+	&= \begin{bmatrix}\frac{\partial T}{\partial \dot{r}} - \frac{\partial U}{\partial \dot{r}} \\ \\
+	\frac{\partial T}{\partial \dot{\theta}} - \frac{\partial U}{\partial \dot{\theta}} \end{bmatrix} \\
+	&= \begin{bmatrix}m\dot{r} + ml\dot{\theta}cos(\theta) \; - \; 0 \\
+		ml\dot{r}cos(\theta) + \dot{\theta}(ml^2 + I_p) \; - \; 0\end{bmatrix} \\
+	&= \begin{bmatrix}m\dot{r} + ml\dot{\theta}cos(\theta) \\
+		ml\dot{r}cos(\theta) + \dot{\theta}(ml^2 + I_p)\end{bmatrix} \\
+\end{align}
+
+Now taking the time derivative, we get:
+\begin{align}
+	\frac{d}{dt} \frac{\partial L}{\partial \dot{q}} &= \frac{d}{dt} \begin{bmatrix}m\dot{r} + ml\dot{\theta}cos(\theta) \\
+	ml\dot{r}cos(\theta) + \dot{\theta}(ml^2 + I_p)\end{bmatrix} \\
+	&= \begin{bmatrix} m\ddot{r} + ml\ddot{\theta}cos(\theta) - ml\dot{\theta}^2sin(\theta) \\
+		ml\ddot{r}cos(\theta) - ml\dot{r}\dot{\theta}sin(\theta) + \ddot{\theta}(ml^2 + I_p) \end{bmatrix}
+\end{align}
+
+So the Euler-Lagrange equation is:
+\begin{align}
+	\frac{\partial L}{\partial q_i} - \frac{d}{dt} \frac{\partial L}{\partial \dot q_i} = 0 \\
+	\begin{bmatrix}0 \\ -ml\dot{r}\dot{\theta}sin(\theta) \; + \; mglsin(\theta)\end{bmatrix} - \begin{bmatrix} m\ddot{r} + ml\ddot{\theta}cos(\theta) - ml\dot{\theta}^2sin(\theta) \\
+		ml\ddot{r}cos(\theta) - ml\dot{r}\dot{\theta}sin(\theta) + \ddot{\theta}(ml^2 + I_p) \end{bmatrix} &= 0 \\
+    \begin{bmatrix}ml\dot{\theta}^2sin(\theta) - m\ddot{r} - ml\ddot{\theta}cos(\theta) \\
+		mglsin(\theta) - ml\ddot{r}cos(\theta) - \ddot{\theta}(ml^2 + I_p) \end{bmatrix} &= 0
+\end{align}
+
+And now that we have the Euler-Lagrange equation, then when can set it to our control variables.
+
+\[
+M(q) =
+\begin{bmatrix}
+	m & m l \cos\theta \\
+	m l \cos\theta & m l^2 + I_p
+\end{bmatrix}
+\]
+
+\[
+C(q, \dot{q}) =
+\begin{bmatrix}
+	m l \dot{\theta}^2 \sin\theta \\
+	m g l \sin\theta - m l \dot{r} \dot{\theta} \sin\theta
+\end{bmatrix}
+\]
+
+\[
+\tau =
+\begin{bmatrix}
+	\tau_r \\
+	\tau_\theta
+\end{bmatrix}
+\]
+
+\[
+M(q) \ddot{q} = C(q, \dot{q}) + \tau
+\]
+
+\[
+\begin{bmatrix}
+	m & m l \cos\theta \\
+	m l \cos\theta & m l^2 + I_p
+\end{bmatrix}
+\begin{bmatrix}
+	\ddot{r} \\
+	\ddot{\theta}
+\end{bmatrix}
+=
+\begin{bmatrix}
+	m l \dot{\theta}^2 \sin\theta \\
+	m g l \sin\theta
+\end{bmatrix}
++
+\begin{bmatrix}
+	\tau_r \\
+	\tau_\theta
+\end{bmatrix}
+\]
+
+\begin{align}
+	\ddot{q} = M^{-1} (C(q,\dot{q}) + \tau)
+\end{align}
+
+Where,
+\begin{align}
+\begin{bmatrix}
+	m & m l \cos\theta \\
+	m l \cos\theta & m l^2 + I_p
+\end{bmatrix}^{-1} &= \frac{1}{det(M)} 
+\begin{bmatrix}
+	ml^2 + I_p & -m l \cos\theta \\
+	-m l \cos\theta & m
+\end{bmatrix}
+\end{align}
+
+where:
+\begin{align}
+	det(M) &= (0,0)*(1,1) - (1,0)*(0,1) \\
+	&= m(ml^2 + I_p) - m^2l^2cos^2(\theta) \\
+	&= mI_p + m^2l^2 - m^2l^2cos^2(\theta) \\
+	&= mI_p + m^2l^2(1 - cos^2(\theta)) \\
+	&= mI_p + m^2l^2sin(\theta)
+\end{align}
+
+so multiplying $M^{-1}$ by $C + \tau$:
+\begin{align}
+	\begin{bmatrix}
+		\ddot{r} \\
+		\ddot{\theta}
+	\end{bmatrix} &=
+	\frac{1}{mI_p + m^2l^2sin(\theta)}
+	\begin{bmatrix}
+	ml^2 + I_p & -m l \cos\theta \\
+-m l \cos\theta & m
+	\end{bmatrix}
+	\begin{bmatrix}
+		ml\dot{\theta}^2sin(\theta) + \tau_r \\
+		mglsin(\theta) + \tau_\theta
+	\end{bmatrix} \\
+	&= \begin{bmatrix}
+		\frac{(ml^2 + I_p)(ml\dot{\theta}^2sin(\theta) + \tau_r) - (-mlcos(\theta)(mglsin(\theta) + \tau_\theta))}
+		{mI_p + m^2l^2sin(\theta)} \\ \\
+		\frac{(-mlcos(\theta))(ml\dot{\theta}^2sin(\theta) + \tau_r) - (m(mglsin(\theta) + \tau_\theta))}
+		{mI_p + m^2l^2sin(\theta)}
+	\end{bmatrix}
+\end{align}
+
+So, now we have solved our system for accelerations in terms of our control inputs and the energy terms.
+
+
+
